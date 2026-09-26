@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ranking Académico</title>
+<meta name="description" content="Consulta tu puesto en el ranking académico por código de estudiante, general y por base, y revisa tu historial por periodo.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="site-header">
+    <div class="kicker">Ranking académico</div>
+    <h1>Consulta tu puesto</h1>
+    <p>Ingresa tu código de estudiante para ver tu posición general, tu posición dentro de tu base y cuánto te falta para subir un puesto.</p>
+  </header>
+
+  <div class="periods" id="periods"></div>
+
+  <div class="search-card">
+    <input type="text" id="codigoInput" placeholder="Código de estudiante" autocomplete="off">
+    <button id="buscarBtn">Buscar</button>
+  </div>
+
+  <div class="error-box" id="errorBox" style="display:none;"></div>
+
+  <div class="result" id="result">
+
+    <div class="stat-row">
+      <div class="stat-card">
+        <div class="label">Puesto general</div>
+        <div class="num" id="puestoGeneral">—</div>
+        <div class="sub" id="totalGeneral"></div>
+      </div>
+      <div class="stat-card">
+        <div class="label">Puesto en su base</div>
+        <div class="num" id="puestoBase">—</div>
+        <div class="sub" id="totalBase"></div>
+      </div>
+    </div>
+
+    <div class="info-card">
+      <h3>Datos del alumno</h3>
+      <div class="info-grid">
+        <div class="item"><div class="k">Código</div><div class="v" id="infoCodigo"></div></div>
+        <div class="item"><div class="k">Base</div><div class="v" id="infoBase"></div></div>
+        <div class="item"><div class="k">Apellido paterno</div><div class="v" id="infoApPaterno"></div></div>
+        <div class="item"><div class="k">Apellido materno</div><div class="v" id="infoApMaterno"></div></div>
+        <div class="item"><div class="k">Nombres</div><div class="v" id="infoNombres"></div></div>
+        <div class="item"><div class="k">Promedio ponderado</div><div class="v" id="infoPromedio"></div></div>
+      </div>
+    </div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="history" id="historySection" style="display:none;">
+      <h3>Tu evolución en el tiempo</h3>
+      <table>
+        <thead>
+          <tr><th>Periodo</th><th>Puesto general</th><th>Puesto en base</th><th>Promedio</th></tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="data.js"></script>
+<script>
+  // ===== Fuente de datos =====
+  // Deja SHEET_CSV_URL vacío ("") para usar data.js (el archivo local).
+  // Pega aquí tu enlace de Google Sheets publicado como CSV para que la
+  // página lea los datos directamente desde tu hoja compartida.
+  const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQhReBlL1P0LkZxRk03ZvjVxuho2gpv15-8dHf9OQ2uzv5lekD9RQ1PupZVdH6ta_dreGfIDqwdiNWu/pub?output=csv";
+
+  let DB = window.RANKING_DATA;
+  let currentPeriod = null;
+
+  const periodsEl = document.getElementById('periods');
+  const inputEl = document.getElementById('codigoInput');
+  const errorBox = document.getElementById('errorBox');
+  const resultEl = document.getElementById('result');
+
+  function renderPeriodTabs(){
+    periodsEl.innerHTML = '';
+    DB.periods.forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = 'period-btn' + (p === currentPeriod ? ' active' : '');
+      btn.textContent = p;
+      btn.onclick = () => {
+        currentPeriod = p;
+        renderPeriodTabs();
+        if (inputEl.value.trim()) buscar();
+      };
+      periodsEl.appendChild(btn);
+    });
+  }
+
+  function rankFor(periodKey, base){
+    const list = (DB.data[periodKey] || []).slice();
+    const general = list.slice().sort((a,b) => b.promedio - a.promedio);
+    const enBase = list.filter(s => s.base === base).sort((a,b) => b.promedio - a.promedio);
+    return { general, enBase };
+  }
+
+  function findInPeriod(periodKey, codigo){
+    return (DB.data[periodKey] || []).find(s => s.codigo.toLowerCase() === codigo.toLowerCase());
+  }
+
+  function fmt(n){ return n.toFixed(2); }
+
+  function buscar(){
+    const codigo = inputEl.value.trim();
+    errorBox.style.display = 'none';
+    resultEl.classList.remove('show');
+
+    if (!codigo){
+      errorBox.textContent = 'Ingresa un código de estudiante.';
+      errorBox.style.display = 'block';
+      return;
+    }
+
+    const alumno = findInPeriod(currentPeriod, codigo);
+    if (!alumno){
+      errorBox.textContent = `No se encontró el código "${codigo}" en el periodo ${currentPeriod}.`;
+      errorBox.style.display = 'block';
+      return;
+    }
+
+    const { general, enBase } = rankFor(currentPeriod, alumno.base);
+    const posGeneral = general.findIndex(s => s.codigo === alumno.codigo) + 1;
+    const posBase = enBase.findIndex(s => s.codigo === alumno.codigo) + 1;
+
+    document.getElementById('puestoGeneral').textContent = posGeneral;
+    document.getElementById('totalGeneral').textContent = `de ${general.length} alumnos`;
+    document.getElementById('puestoBase').textContent = posBase;
+    document.getElementById('totalBase').textContent = `de ${enBase.length} en ${alumno.base}`;
+
+    document.getElementById('infoCodigo').textContent = alumno.codigo;
+    document.getElementById('infoBase').textContent = alumno.base;
+    document.getElementById('infoApPaterno').textContent = alumno.apellidoPaterno;
+    document.getElementById('infoApMaterno').textContent = alumno.apellidoMaterno;
+    document.getElementById('infoNombres').textContent = alumno.nombres;
+    document.getElementById('infoPromedio').textContent = fmt(alumno.promedio);
+
+    const messages = document.getElementById('messages');
+    messages.innerHTML = '';
+
+    if (posGeneral === 1){
+      messages.innerHTML += `<div class="msg top"><strong>¡Vas primero en el ranking general!</strong></div>`;
+    } else {
+      const arriba = general[posGeneral - 2];
+      const falta = fmt(arriba.promedio - alumno.promedio);
+      messages.innerHTML += `<div class="msg">Te faltan <strong>${falta} puntos</strong> para alcanzar el puesto ${posGeneral - 1} general.</div>`;
+    }
+
+    if (posBase === 1){
+      messages.innerHTML += `<div class="msg top"><strong>¡Vas primero en tu base (${alumno.base})!</strong></div>`;
+    } else {
+      const arribaBase = enBase[posBase - 2];
+      const faltaBase = fmt(arribaBase.promedio - alumno.promedio);
+      messages.innerHTML += `<div class="msg">Te faltan <strong>${faltaBase} puntos</strong> para alcanzar el puesto ${posBase - 1} en tu base.</div>`;
+    }
+
+    // Historial en todos los periodos
+    const historyBody = document.getElementById('historyBody');
+    historyBody.innerHTML = '';
+    let rows = 0;
+    DB.periods.forEach(periodKey => {
+      const s = findInPeriod(periodKey, codigo);
+      if (!s) return;
+      const { general: g, enBase: b } = rankFor(periodKey, s.base);
+      const pg = g.findIndex(x => x.codigo === s.codigo) + 1;
+      const pb = b.findIndex(x => x.codigo === s.codigo) + 1;
+      historyBody.innerHTML += `<tr><td>${periodKey}</td><td>${pg}</td><td>${pb}</td><td>${fmt(s.promedio)}</td></tr>`;
+      rows++;
+    });
+    document.getElementById('historySection').style.display = rows > 1 ? 'block' : 'none';
+
+    resultEl.classList.add('show');
+  }
+
+  document.getElementById('buscarBtn').addEventListener('click', buscar);
+  inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') buscar(); });
+
+  // Lee un CSV publicado desde Google Sheets y lo convierte a la misma
+  // estructura { periods:[...], data:{ periodo: [alumnos] } } que usa data.js.
+  // La hoja debe tener columnas: Periodo, Codigo, ApellidoPaterno,
+  // ApellidoMaterno, Nombres, Base, Promedio (una fila por alumno-periodo).
+  async function loadFromSheet(url){
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('No se pudo leer la hoja (' + res.status + ')');
+    const csvText = await res.text();
+    const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+
+    const periods = [];
+    const data = {};
+    parsed.data.forEach(row => {
+      const periodo = (row.Periodo || '').trim();
+      if (!periodo) return;
+      if (!data[periodo]){ data[periodo] = []; periods.push(periodo); }
+      data[periodo].push({
+        codigo: (row.Codigo || '').trim(),
+        apellidoPaterno: (row.ApellidoPaterno || '').trim(),
+        apellidoMaterno: (row.ApellidoMaterno || '').trim(),
+        nombres: (row.Nombres || '').trim(),
+        base: (row.Base || '').trim(),
+        promedio: parseFloat(row.Promedio) || 0
+      });
+    });
+    return { periods, data };
+  }
+
+  async function init(){
+    if (SHEET_CSV_URL){
+      periodsEl.textContent = 'Cargando datos…';
+      try{
+        DB = await loadFromSheet(SHEET_CSV_URL);
+      } catch(e){
+        console.warn('No se pudo cargar desde Google Sheets, usando data.js como respaldo.', e);
+        DB = window.RANKING_DATA;
+      }
+    }
+    currentPeriod = DB.periods[DB.periods.length - 1];
+    renderPeriodTabs();
+  }
+
+  init();
+</script>
+</body>
+</html>
