@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ranking Académico</title>
+<meta name="description" content="Consulta tu puesto en el ranking académico por código de estudiante.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap">
+
+  <header class="site-header">
+    <svg class="icon-badge" viewBox="0 0 24 24" fill="none" stroke="#A855F7" stroke-width="2"><path d="M12 3 2 8l10 5 10-5-10-5Z"/><path d="M6 10.5V16c0 1.5 3 3 6 3s6-1.5 6-3v-5.5"/></svg>
+    Ranking académico
+  </header>
+
+  <div class="hero">
+    <div>
+      <h1>Consulta tu<br><span class="accent">puesto</span></h1>
+      <p class="lead">Ingresa tu código de estudiante para ver tu posición general, tu posición en tu base y cuánto te falta para subir.</p>
+      <div class="note">↗ Tu esfuerzo también se ve reflejado</div>
+    </div>
+    <div class="hero-card">
+      <div class="icon-circle"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4ZM7 6H4a2 2 0 0 0 2 2h1M17 6h3a2 2 0 0 1-2 2h-1"/></svg></div>
+      <p>Consulta gratuita e inmediata: puesto general, puesto en tu base y tu evolución por periodo.</p>
+    </div>
+  </div>
+
+  <div class="periods" id="periods"></div>
+
+  <div class="search-card">
+    <label><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3D4" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg> Código de estudiante</label>
+    <div class="search-row">
+      <input type="text" id="codigoInput" placeholder="Ej. 202345" autocomplete="off">
+      <button id="buscarBtn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>Buscar</button>
+    </div>
+  </div>
+
+  <div class="error-box" id="errorBox" style="display:none;"></div>
+
+  <div class="result" id="result">
+
+    <div class="stat-row">
+      <div class="stat-card blue">
+        <div class="top-row">
+          <div class="icon-circle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10v4a5 5 0 0 1-10 0V4ZM7 6H4a2 2 0 0 0 2 2h1M17 6h3a2 2 0 0 1-2 2h-1"/></svg></div>
+          <div class="title">Puesto general</div>
+        </div>
+        <div class="num" id="puestoGeneral">—</div>
+        <div class="sub" id="totalGeneral"></div>
+      </div>
+      <div class="stat-card purple">
+        <div class="top-row">
+          <div class="icon-circle"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="9" cy="8" r="3"/><circle cx="16" cy="9" r="2.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M15 14.2c2.3.4 4 2.3 4 5.8"/></svg></div>
+          <div class="title">Puesto en su base</div>
+        </div>
+        <div class="num" id="puestoBase">—</div>
+        <div class="sub" id="totalBase"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3><span class="icon-circle"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M8 3h8l1 4H7l1-4Z"/><rect x="5" y="7" width="14" height="14" rx="2"/></svg></span>Datos del alumno</h3>
+      <div class="underline"></div>
+      <div class="info-list">
+        <div class="row"><span class="k">Código</span><span class="v" id="infoCodigo"></span></div>
+        <div class="row"><span class="k">Base</span><span class="v" id="infoBase"></span></div>
+        <div class="row"><span class="k">Apellido paterno</span><span class="v" id="infoApPaterno"></span></div>
+        <div class="row"><span class="k">Apellido materno</span><span class="v" id="infoApMaterno"></span></div>
+        <div class="row"><span class="k">Nombres</span><span class="v" id="infoNombres"></span></div>
+        <div class="row"><span class="k">Promedio ponderado</span><span class="v" id="infoPromedio"></span></div>
+      </div>
+    </div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="card">
+      <h3><span class="icon-circle"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 15a5 5 0 1 0 0-10 5 5 0 0 0 0 10ZM8.5 14 7 21l5-2.5L17 21l-1.5-7"/></svg></span>Ubicación en la curva</h3>
+      <div class="underline"></div>
+      <div class="tier-grid">
+        <div class="tier-col">
+          <h4>General</h4>
+          <div id="tierGeneral"></div>
+        </div>
+        <div class="tier-col">
+          <h4>En su base</h4>
+          <div id="tierBase"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="historyCard" style="display:none;">
+      <h3><span class="icon-circle"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v5h5"/></svg></span>Tu evolución en el tiempo</h3>
+      <div class="underline"></div>
+      <table>
+        <thead><tr><th>Periodo</th><th>Puesto general</th><th>Puesto en base</th><th>Promedio</th></tr></thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+
+    <div class="doodle">¡Tú puedes! ✦</div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script>
+  // ===== Configuración =====
+  // ID de tu Google Sheet (lo encuentras en la URL: .../spreadsheets/d/ESTE_ID/edit)
+  // La hoja debe estar compartida como "Cualquier persona con el enlace - Lector".
+  const SPREADSHEET_ID = "16ebv_HDpEJEuC9CFrK87kZL_QT0W9d9Aba4mm1W1afQ";
+
+  // Nombres EXACTOS de las pestañas (una pestaña = un periodo académico).
+  // Agrega aquí el nombre cuando crees una pestaña nueva.
+  const SHEET_PERIODS = ["2026-I"];
+
+  let DB = { periods: [], data: {} };
+  let currentPeriod = null;
+
+  const periodsEl = document.getElementById('periods');
+  const inputEl = document.getElementById('codigoInput');
+  const errorBox = document.getElementById('errorBox');
+  const resultEl = document.getElementById('result');
+
+  function renderPeriodTabs(){
+    periodsEl.innerHTML = '';
+    DB.periods.forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = 'period-btn' + (p === currentPeriod ? ' active' : '');
+      btn.textContent = p;
+      btn.onclick = () => {
+        currentPeriod = p;
+        renderPeriodTabs();
+        if (inputEl.value.trim()) buscar();
+      };
+      periodsEl.appendChild(btn);
+    });
+  }
+
+  function rankFor(periodKey, base){
+    const list = (DB.data[periodKey] || []).slice();
+    const general = list.slice().sort((a,b) => b.promedio - a.promedio);
+    const enBase = list.filter(s => s.base === base).sort((a,b) => b.promedio - a.promedio);
+    return { general, enBase };
+  }
+
+  function findInPeriod(periodKey, codigo){
+    return (DB.data[periodKey] || []).find(s => s.codigo.toLowerCase() === codigo.toLowerCase());
+  }
+
+  function fmt(n){ return n.toFixed(2); }
+
+  // Determina las franjas (décimo/quinto/tercio/medio superior) que alcanza un puesto.
+  function tiers(pos, total){
+    return {
+      decimo: pos <= Math.ceil(total * 0.10),
+      quinto: pos <= Math.ceil(total * 0.20),
+      tercio: pos <= Math.ceil(total / 3),
+      medio:  pos <= Math.ceil(total * 0.50)
+    };
+  }
+
+  function renderTiers(containerId, t){
+    const labels = [
+      ['decimo','Décimo superior'],
+      ['quinto','Quinto superior'],
+      ['tercio','Tercio superior'],
+      ['medio','Medio superior']
+    ];
+    const el = document.getElementById(containerId);
+    el.innerHTML = labels.map(([key,label]) => `
+      <div class="tier-item ${t[key] ? 'active' : ''}">
+        <span class="dot">${t[key] ? '✓' : ''}</span>
+        <span class="label">${label}</span>
+      </div>
+    `).join('');
+  }
+
+  function buscar(){
+    const codigo = inputEl.value.trim();
+    errorBox.style.display = 'none';
+    resultEl.classList.remove('show');
+
+    if (!DB.periods.length){
+      errorBox.textContent = 'Aún no se pudieron cargar los datos. Intenta recargar la página en unos segundos.';
+      errorBox.style.display = 'block';
+      return;
+    }
+    if (!codigo){
+      errorBox.textContent = 'Ingresa un código de estudiante.';
+      errorBox.style.display = 'block';
+      return;
+    }
+
+    const alumno = findInPeriod(currentPeriod, codigo);
+    if (!alumno){
+      errorBox.textContent = `No se encontró el código "${codigo}" en el periodo ${currentPeriod}.`;
+      errorBox.style.display = 'block';
+      return;
+    }
+
+    const { general, enBase } = rankFor(currentPeriod, alumno.base);
+    const posGeneral = general.findIndex(s => s.codigo === alumno.codigo) + 1;
+    const posBase = enBase.findIndex(s => s.codigo === alumno.codigo) + 1;
+
+    document.getElementById('puestoGeneral').textContent = posGeneral;
+    document.getElementById('totalGeneral').textContent = `de ${general.length} alumnos`;
+    document.getElementById('puestoBase').textContent = posBase;
+    document.getElementById('totalBase').textContent = `de ${enBase.length} en ${alumno.base}`;
+
+    document.getElementById('infoCodigo').textContent = alumno.codigo;
+    document.getElementById('infoBase').textContent = alumno.base;
+    document.getElementById('infoApPaterno').textContent = alumno.apellidoPaterno;
+    document.getElementById('infoApMaterno').textContent = alumno.apellidoMaterno;
+    document.getElementById('infoNombres').textContent = alumno.nombres;
+    document.getElementById('infoPromedio').textContent = fmt(alumno.promedio);
+
+    renderTiers('tierGeneral', tiers(posGeneral, general.length));
+    renderTiers('tierBase', tiers(posBase, enBase.length));
+
+    const messages = document.getElementById('messages');
+    messages.innerHTML = '';
+    if (posGeneral === 1){
+      messages.innerHTML += `<div class="msg top"><strong>¡Vas primero en el ranking general!</strong></div>`;
+    } else {
+      const arriba = general[posGeneral - 2];
+      messages.innerHTML += `<div class="msg">Te faltan <strong>${fmt(arriba.promedio - alumno.promedio)} puntos</strong> para alcanzar el puesto ${posGeneral - 1} general.</div>`;
+    }
+    if (posBase === 1){
+      messages.innerHTML += `<div class="msg top"><strong>¡Vas primero en tu base (${alumno.base})!</strong></div>`;
+    } else {
+      const arribaBase = enBase[posBase - 2];
+      messages.innerHTML += `<div class="msg">Te faltan <strong>${fmt(arribaBase.promedio - alumno.promedio)} puntos</strong> para alcanzar el puesto ${posBase - 1} en tu base.</div>`;
+    }
+
+    const historyBody = document.getElementById('historyBody');
+    historyBody.innerHTML = '';
+    let rows = 0;
+    DB.periods.forEach(periodKey => {
+      const s = findInPeriod(periodKey, codigo);
+      if (!s) return;
+      const { general: g, enBase: b } = rankFor(periodKey, s.base);
+      const pg = g.findIndex(x => x.codigo === s.codigo) + 1;
+      const pb = b.findIndex(x => x.codigo === s.codigo) + 1;
+      historyBody.innerHTML += `<tr><td>${periodKey}</td><td>${pg}</td><td>${pb}</td><td>${fmt(s.promedio)}</td></tr>`;
+      rows++;
+    });
+    document.getElementById('historyCard').style.display = rows > 1 ? 'block' : 'none';
+
+    resultEl.classList.add('show');
+  }
+
+  document.getElementById('buscarBtn').addEventListener('click', buscar);
+  inputEl.addEventListener('keydown', e => { if (e.key === 'Enter') buscar(); });
+
+  // Lee una pestaña de Google Sheets como CSV por su nombre (no requiere "Publicar en la Web",
+  // solo que la hoja esté compartida como "Cualquier persona con el enlace - Lector").
+  async function loadFromSheets(){
+    const periods = [];
+    const data = {};
+    for (const period of SHEET_PERIODS){
+      const url = `https://docs.google.com/spreadsheets/d/${SPREADSHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(period)}`;
+      try{
+        const res = await fetch(url);
+        if (!res.ok) continue;
+        const csvText = await res.text();
+        const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+        const rows = parsed.data.map(r => ({
+          codigo: (r.Codigo || '').toString().trim(),
+          apellidoPaterno: (r.ApellidoPaterno || '').trim(),
+          apellidoMaterno: (r.ApellidoMaterno || '').trim(),
+          nombres: (r.Nombres || '').trim(),
+          base: (r.Base || '').trim(),
+          promedio: parseFloat(r.PromedioPonderado) || 0
+        })).filter(r => r.codigo);
+        if (rows.length){ periods.push(period); data[period] = rows; }
+      } catch(e){ console.warn('No se pudo leer el periodo', period, e); }
+    }
+    if (!periods.length) throw new Error('No se pudo leer ningún periodo desde Google Sheets.');
+    return { periods, data };
+  }
+
+  async function init(){
+    periodsEl.textContent = 'Cargando datos…';
+    try{
+      DB = await loadFromSheets();
+      currentPeriod = DB.periods[DB.periods.length - 1];
+      renderPeriodTabs();
+    } catch(e){
+      console.error(e);
+      periodsEl.textContent = '';
+      errorBox.textContent = 'No se pudieron cargar los datos desde Google Sheets. Revisa la configuración (SPREADSHEET_ID y SHEET_PERIODS) en el código.';
+      errorBox.style.display = 'block';
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
